@@ -1,0 +1,158 @@
+title: "PCA - Cereals Analysis"
+author: "Vivek Teja"
+date: "6/19/2020"
+output: html_document
+---
+Objective:we will first clean a dataset and create some simple visualizations. Then, we will
+conduct a principal component analysis to reduce dimensionality. We use R to
+answer the questions. The data were collected on the nutritional information and consumer rating of 77
+breakfast cereals. For each cereal we have included 13 numerical variables and 2 categorical variables
+(i.e. mfr and type).
+Variable
+Name
+Description
+Name: Name of cereal
+mfr: Manufacturer of cereal. {A=American Home Food Products, G=General Mills,
+K=Kelloggs, N=Nabisco, P=Post, Q=Qauker Oats, R=Ralston Purina}
+type: {cold, hot}
+calories: Calories per serving
+protein: Grams of protein
+fat: Grams of fat
+sodium: Milligrams of sodium
+fiber: Grams of dietary fiber
+carbo: Grams of complex carbohydrates
+sugars: Grams of sugars
+potassL Milligrams of potassium
+vitaminsL Vitamins and minerals-0, 25, or 100, indicating the typical percentage of FDA
+recommended
+shelf Display shelf: 1, 2, or 3, counting from the floor
+weight: Weight in ounces of one serving
+cups: Number of cups in one serving
+rating: A rating of the cereals calculated by Consumer Reports
+
+---
+Loading the Cereals Data Set
+
+```{r}
+setwd("C:/Users/vamsi/Downloads")
+library(readr)
+library(ggplot2)
+Cereals <- read_csv("Cereals.csv")
+View(Cereals)
+```
+1. Regarding two categorical variables (mfr and type), use a single proper visualization to show the
+distributions of both variables
+
+```{r}
+ggplot(Cereals, aes(type, ..count..)) + geom_bar(aes(fill = mfr), position = "dodge")
+```
+
+2. Calculate the average consumer rating for each combination of manufacturer (mfr) and type. Obtain a
+data frame (table) that follows the structure below. Use “0” to represent missing value if there is no any
+cereal for a certain combination of manufacturer and type. Take a screenshot of the data frame.
+```{r}
+library(sqldf)
+library(tidyr)
+library(reshape)
+q2<- sqldf("select type,mfr,avg(rating) as avg from Cereals group by type,mfr")
+
+a<- sqldf("select distinct type from Cereals")
+
+b<- sqldf("select distinct mfr from Cereals")
+
+c<-crossing(a, b)
+
+q2_<-sqldf("select b.type, b.mfr, case when avg is null then 0 else avg end as avg from (select c.*, a.avg from c left join q2 a on c.type=a.type and c.mfr =a.mfr)b ")
+
+v<-data.frame(cast(q2_, type ~ mfr))
+v
+```
+3) Use a proper visualization to compare the distribution of calories by hot vs. cold cereals. What does
+this plot show us regarding mean, variance, and skewness?
+
+
+```{r}
+t<- boxplot(calories~type,data=Cereals,main="Cold vs Hot",
+              xlab="Type",ylab="calories",
+              col="blue")
+t
+
+```
+
+Variance: High in cold than hot
+Skewness: For Cold, Median is almost near the end of 3 rd quartile, this means that mean is less than median, hence left skewed(Also when we check summary stats we have mean of 107.2 and median of 110 thus indicating left skewed)
+For Hot, Mean = Median and No skewness
+
+4) Use a proper visualization to show the distribution of consumer rating by different shelf height. If we
+were to predict consumer rating from shelf height, does it appear that we need to keep all three categories
+of shelf height or we could combine two of the categories as a new category?
+
+```{r}
+d<- boxplot(rating~shelf,data=Cereals,main="cust ratings and shelf link",
+              xlab="Ratings",ylab="Shelf",horizontal=TRUE, 
+              col="green")
+d
+
+```
+```{r}
+Cereals$shelf<- as.factor(Cereals$shelf)
+p <- ggplot(data = Cereals,
+             mapping = aes(x = rating, fill = shelf, color = shelf))
+p + geom_density(alpha = 0.4)
+
+```
+Looking at the box and density plots, 1 and 3 can be combined
+
+5) Get the correlation table for the numerical attributes. In addition, generate a scatter plot array for these
+variables. Find one pair of variables with strongest positive correlation and find one pair of variables with
+strongest negative correlation
+
+```{r}
+library(corrplot)
+c<- Cereals[complete.cases(Cereals), ]
+c$shelf<- as.numeric(c$shelf)
+corrplot(cor(c[,4:16],use="complete.obs"),type="upper",main="Correlation plot")
+```
+
+6) Standardize the numerical attributes and then conduct principal component analysis for the numerical variables except consumer rating to derive 4 principal components. Obtain the cumulative proportion of variance (of the numerical variables) captured
+by the 4 principal components??
+
+```{r}
+scaled.dat <- scale(c[,4:16])
+head(scaled.dat)
+qs<- c[,4:15]
+PCA <- prcomp(qs, center = TRUE, scale = TRUE)
+summary(PCA)
+
+```
+
+
+
+
+```{r}
+screeplot(PCA, type = "l", npcs = 15, main = "Screeplot of the first 12 PCs")
+abline(h = 1, col="red", lty=5)
+legend("topright", legend=c("Eigenvalue = 1"), col=c("red"), lty=5, cex=0.6)
+
+```
+
+```{r}
+var<- PCA$sdev^2 
+sum(var[1:4])/sum(var)
+
+```
+
+```{r}
+cumpro <- cumsum(PCA$sdev^2 / sum(PCA$sdev^2))
+plot(cumpro[0:12], xlab = "PC #", ylab = "Amount of explained variance", main = "Cumulative variance plot")
+abline(v = 4, col="blue", lty=5)
+abline(h = 0.7308454, col="blue", lty=5)
+legend("topleft", legend=c("Cut-off @ PC4"),        col=c("blue"), lty=5, cex=0.6)
+
+```
+```{r}
+library(factoextra)
+fviz_eig(PCA)
+```
+
+
