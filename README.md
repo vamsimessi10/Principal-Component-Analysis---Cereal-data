@@ -1,11 +1,16 @@
 I will first clean the dataset and then create some visualizations to understand how the data is present. Then, I will
 conduct a principal component analysis to reduce dimensionality. We use R to
 answer the questions. The data were collected on the nutritional information and consumer rating of 77
-breakfast cereals. For each cereal we have included 13 numerical variables and 2 categorical variables
+breakfast cereals. 
+
+
+
+
+For each cereal we have included 13 numerical variables and 2 categorical variables
 (i.e. mfr and type).
-Variable
-Name
-Description
+Variable Name; Description
+
+
 Name: Name of cereal
 mfr: Manufacturer of cereal. {A=American Home Food Products, G=General Mills,
 K=Kelloggs, N=Nabisco, P=Post, Q=Qauker Oats, R=Ralston Purina}
